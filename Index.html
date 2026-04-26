@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcora - Know Your Guest</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #F0F8FF;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        const Welcora = () => {
+            const [currentPage, setCurrentPage] = useState('landing');
+            const [isAuthenticated, setIsAuthenticated] = useState(false);
+            const [currentHost, setCurrentHost] = useState(null);
+            
+            const [hosts, setHosts] = useState({});
+            const [ratings, setRatings] = useState({});
+
+            const colors = {
+                primary: '#5DB3D5',
+                light: '#F0F8FF',
+                dark: '#1A1A1A',
+                white: '#FFFFFF',
+                success: '#27AE60',
+                warning: '#F39C12',
+                danger: '#E74C3C'
+            };
+
+            const getAverageRating = (customerId) => {
+                const customerRatings = Object.values(ratings).filter(r => r.customerId === customerId && !r.disputed);
+                if (customerRatings.length === 0) return 0;
+                const avg = customerRatings.reduce((sum, r) => sum + r.rating, 0) / customerRatings.length;
+                return parseFloat(avg.toFixed(1));
+            };
+
+            const getCustomerStatus = (customerId) => {
+                const avg = getAverageRating(customerId);
+                if (avg >= 4.5) return { label: 'CLEAN', color: colors.success, icon: '✅' };
+                if (avg >= 3.5) return { label: 'CAUTION', color: colors.warning, icon: '⚠️' };
+                if (avg > 0) return { label: 'BLOCKED', color: colors.danger, icon: '❌' };
+                return { label: 'NEW', color: '#95A5A6', icon: '⭕' };
+            };
+
+            const LandingPage = () => (
+                <div style={{ minHeight: '100vh', backgroundColor: colors.light }}>
+                    <header style={{
+                        backgroundColor: colors.white,
+                        padding: '1.5rem 2rem',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <div style={{
+                                width: '40px',
+                                height: '40px',
+                                borderRadius: '50%',
+                                backgroundColor: colors.primary,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: colors.white,
+                                fontSize: '24px',
+                                fontWeight: 'bold'
+                            }}>🔐</div>
+                            <h1 style={{ margin: 0, color: colors.primary, fontSize: '28px', fontWeight: 'bold' }}>WELCORA</h1>
+                        </div>
+                        <button
+                            onClick={() => setCurrentPage('login')}
+                            style={{
+                                padding: '0.75rem 1.5rem',
+                                backgroundColor: colors.primary,
+                                color: colors.white,
+                                border: 'none',
+                                borderRadius: '8px',
+                                cursor: 'pointer',
+                                fontSize: '16px',
+                                fontWeight: 'bold',
+                                transition: 'background 0.3s'
+                            }}
+                            onMouseEnter={(e) => e.target.style.backgroundColor = '#4A9FC6'}
+                            onMouseLeave={(e) => e.target.style.backgroundColor = colors.primary}
+                        >
+                            Login
+                        </button>
+                    </header>
+
+                    <section style={{
+                        padding: '4rem 2rem',
+                        textAlign: 'center',
+                        backgroundColor: colors.primary,
+                        color: colors.white
+                    }}>
+                        <div style={{
+                            width: '150px',
+                            height: '150px',
+                            borderRadius: '20px',
+                            backgroundColor: colors.white,
+                            margin: '0 auto 2rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '80px'
+                        }}>🔑</div>
+                        <h2 style={{ fontSize: '3rem', marginBottom: '1rem', margin: 0 }}>Know Your Guest</h2>
+                        <p style={{ fontSize: '1.3rem', marginBottom: '2rem', maxWidth: '600px', margin: '1rem auto 2rem' }}>
+                            Protect your property and verify your guests before accepting bookings
+                        </p>
+                    </section>
+
+                    <section style={{ padding: '4rem 2rem', maxWidth: '1200px', margin: '0 auto' }}>
+                        <h3 style={{ textAlign: 'center', fontSize: '2rem', marginBottom: '3rem', color: colors.dark }}>Why Choose Welcora?</h3>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
+                            {[
+                                { icon: '🔍', title: 'Smart Search', desc: 'Instantly check guest history by email or name' },
+                                { icon: '⭐', title: 'Ratings System', desc: '1-5 star reviews with mandatory feedback' },
+                                { icon: '📊', title: 'Guest Profiles', desc: 'Complete history of stays and behavior' },
+                                { icon: '🛡️', title: 'Data Protection', desc: 'GDPR compliant and secure database' },
+                                { icon: '⚡', title: 'Real-time Updates', desc: 'Instant notifications of new ratings' },
+                                { icon: '🎯', title: 'Accurate Scoring', desc: 'Average ratings show true guest quality' }
+                            ].map((feature, idx) => (
+                                <div key={idx} style={{
+                                    backgroundColor: colors.white,
+                                    padding: '2rem',
+                                    borderRadius: '12px',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                    textAlign: 'center'
+                                }}>
+                                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>{feature.icon}</div>
+                                    <h4 style={{ color: colors.primary, marginBottom: '0.5rem' }}>{feature.title}</h4>
+                                    <p style={{ color: '#666', margin: 0 }}>{feature.desc}</p>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    <section style={{ padding: '4rem 2rem', backgroundColor: '#F9F9F9' }}>
+                        <h3 style={{ textAlign: 'center', fontSize: '2rem', marginBottom: '3rem', color: colors.dark }}>Pricing Plans</h3>
+                        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '2rem' }}>
+                            {[
+                                { name: 'Starter', price: '€9.99', listings: '1-3', features: ['Dashboard Access', 'Unlimited Ratings', 'Email Support', 'Basic Analytics'] },
+                                { name: 'Professional', price: '€24.99', listings: '4-15', features: ['Everything in Starter', 'Priority Support', 'Advanced Analytics', 'Custom Reports'] },
+                                { name: 'Premium', price: '€49.99', listings: '16+', features: ['Everything in Professional', '24/7 Priority Support', 'API Access', 'Dedicated Account Manager'] }
+                            ].map((plan, idx) => (
+                                <div key={idx} style={{
+                                    backgroundColor: colors.white,
+                                    padding: '2rem',
+                                    borderRadius: '12px',
+                                    border: idx === 1 ? `3px solid ${colors.primary}` : '1px solid #DDD',
+                                    transform: idx === 1 ? 'scale(1.05)' : 'scale(1)',
+                                    textAlign: 'center',
+                                    position: 'relative'
+                                }}>
+                                    {idx === 1 && <div style={{ position: 'absolute', top: '-15px', left: '50%', transform: 'translateX(-50%)', backgroundColor: colors.primary, color: colors.white, padding: '0.5rem 1rem', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>POPULAR</div>}
+                                    <h4 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', color: colors.dark }}>{plan.name}</h4>
+                                    <p style={{ fontSize: '0.9rem', color: '#999', marginBottom: '1.5rem' }}>{plan.listings} properties</p>
+                                    <div style={{ fontSize: '2.5rem', fontWeight: 'bold', color: colors.primary, marginBottom: '1rem' }}>{plan.price}<span style={{ fontSize: '0.8rem', color: '#999' }}>/month</span></div>
+                                    <button
+                                        onClick={() => setCurrentPage('signup')}
+                                        style={{
+                                            width: '100%',
+                                            padding: '0.75rem',
+                                            backgroundColor: colors.primary,
+                                            color: colors.white,
+                                            border: 'none',
+                                            borderRadius: '8px',
+                                            fontWeight: 'bold',
+                                            cursor: 'pointer',
+                                            marginBottom: '1.5rem',
+                                            transition: 'background 0.3s'
+                                        }}
+                                        onMouseEnter={(e) => e.target.style.backgroundColor = '#4A9FC6'}
+                                        onMouseLeave={(e) => e.target.style.backgroundColor = colors.primary}
+                                    >
+                                        Get Started
+                                    </button>
+                                    <ul style={{ textAlign: 'left', listStyle: 'none', padding: 0 }}>
+                                        {plan.features.map((feat, i) => (
+                                            <li key={i} style={{ padding: '0.5rem 0', borderBottom: i < plan.features.length - 1 ? '1px solid #EEE' : 'none', color: '#666', fontSize: '0.9rem' }}>✓ {feat}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
+                        </div>
+                    </section>
+
+                    <footer style={{ backgroundColor: colors.dark, color: colors.white, padding: '2rem', textAlign: 'center' }}>
+                        <p>© 2024 Welcora. Protect your property. Know your guest.</p>
+                        <p style={{ fontSize: '0.9rem', color: '#AAA' }}>Email: welcora.business@outlook.com</p>
+                    </footer>
+                </div>
+            );
+
+            const AuthPage = () => {
+                const [isLogin, setIsLogin] = useState(currentPage === 'login');
+                const [email, setEmail] = useState('');
+                const [password, setPassword] = useState('');
+                const [name, setName] = useState('');
+                const [tier, setTier] = useState('Starter');
+                const [error, setError] = useState('');
+
+                const handleSubmit = (e) => {
+                    e.preventDefault();
+                    if (!email || !password) {
+                        setError('All fields required');
+                        return;
+                    }
+
+                    if (isLogin) {
+                        if (hosts[email] && hosts[email].password === password) {
+                            setIsAuthenticated(true);
+                            setCurrentHost(hosts[email]);
+                            setCurrentPage('dashboard');
+                            setError('');
+                        } else {
+                            setError('Invalid credentials');
+                        }
+                    } else {
+                        if (hosts[email]) {
+                            setError('Email already registered');
+                            return;
+                        }
+                        const newHost = { name, email, password, tier, joinDate: new Date().toLocaleDateString() };
+                        setHosts({ ...hosts, [email]: newHost });
+                        setError('');
+                        setIsLogin(true);
+                        setPassword('');
+                        alert('Account created! Now login.');
+                    }
+                };
+
+                return (
+                    <div style={{ minHeight: '100vh', backgroundColor: colors.light, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+                        <div style={{ backgroundColor: colors.white, padding: '3rem', borderRadius: '12px', boxShadow: '0 4px 12px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px' }}>
+                            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+                                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔐</div>
+                                <h2 style={{ color: colors.primary, margin: 0 }}>{isLogin ? 'Login' : 'Sign Up'}</h2>
+                            </div>
+
+                            {error && <div style={{ backgroundColor: '#FFE6E6', color: colors.danger, padding: '1rem', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.9rem' }}>❌ {error}</div>}
+
+                            <form onSubmit={handleSubmit}>
+                                {!isLogin && (
+                                    <div style={{ marginBottom: '1rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: colors.dark }}>Business Name</label>
+                                        <input
+                                            type="text"
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                            style={{ width: '100%', padding: '0.75rem', border: `2px solid ${colors.primary}`, borderRadius: '8px', fontSize: '1rem', boxSizing: 'border-box' }}
+                                            placeholder="Your Business"
+                                        />
+                                    </div>
+                                )}
+                                <div style={{ marginBottom: '1rem' }}>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: colors.dark }}>Email</label>
+                                    <input
+                                        type="email"
+                                        value={email}
+                                        onChange={(e) => setEmail(e.target.value)}
+                                        style={{ width: '100%', padding: '0.75rem', border: `2px solid ${colors.primary}`, borderRadius: '8px', fontSize: '1rem', boxSizing: 'border-box' }}
+                                        placeholder="your@email.com"
+                                    />
+                                </div>
+                                <div style={{ marginBottom: !isLogin ? '1rem' : '2rem' }}>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: colors.dark }}>Password</label>
+                                    <input
+                                        type="password"
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                        style={{ width: '100%', padding: '0.75rem', border: `2px solid ${colors.primary}`, borderRadius: '8px', fontSize: '1rem', boxSizing: 'border-box' }}
+                                        placeholder="••••••••"
+                                    />
+                                </div>
+
+                                {!isLogin && (
+                                    <div style={{ marginBottom: '2rem' }}>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: colors.dark }}>Plan</label>
+                                        <select value={tier} onChange={(e) => setTier(e.target.value)} style={{ width: '100%', padding: '0.75rem', border: `2px solid ${colors.primary}`, borderRadius: '8px', fontSize: '1rem', boxSizing: 'border-box' }}>
+                                            <option>Starter (€9.99/mo)</option>
+                                            <option>Professional (€24.99/mo)</option>
+                                            <option>Premium (€49.99/mo)</option>
+                                        </select>
+                                    </div>
+                                )}
+
+                                <button
+                                    type="submit"
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.75rem',
+                                        backgroundColor: colors.primary,
+                                        color: colors.white,
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        fontWeight: 'bold',
+                                        cursor: 'pointer',
+                                        fontSize: '1rem',
+                                        transition: 'background 0.3s'
+                                    }}
+                                    onMouseEnter={(e) => e.target.style.backgroundColor = '#4A9FC6'}
+                                    onMouseLeave={(e) => e.target.style.backgroundColor = colors.primary}
+                                >
+                                    {isLogin ? 'Login' : 'Create Account'}
+                                </button>
+                            </form>
+
+                            <div style={{ textAlign: 'center', marginTop: '1.5rem', color: '#666', fontSize: '0.9rem' }}>
+                                {isLogin ? "Don't have an account? " : "Already have an account? "}
+                                <button
+                                    onClick={() => {
+                                        setIsLogin(!isLogin);
+                                        setError('');
+                                        setEmail('');
+                                        setPassword('');
+                                    }}
+                                    style={{ backgroundColor: 'transparent', border: 'none', color: colors.primary, cursor: 'pointer', fontWeight: 'bold' }}
+                                >
+                                    {isLogin ? 'Sign Up' : 'Login'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const DashboardPage = () => {
+                const [activeTab, setActiveTab] = useState('search');
+                const [searchQuery, setSearchQuery] = useState('');
+                const [searchResults, setSearchResults] = useState([]);
+
+                const handleSearch = () => {
+                    if (!searchQuery.trim()) return;
+                    const results = Object.entries(ratings)
+                        .filter(([_, r]) => 
+                            r.customerId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            r.customerEmail.toLowerCase().includes(searchQuery.toLowerCase())
+                        )
+                        .map(([id, r]) => ({ id, ...r }));
+                    setSearchResults(results);
+                };
+
+                const hostRatings = Object.entries(ratings)
+                    .filter(([_, r]) => r.hostEmail === currentHost.email)
+                    .map(([id, r]) => ({ id, ...r }))
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))
+                    .slice(0, 10);
+
+                return (
+                    <div style={{ minHeight: '100vh', backgroundColor: colors.light }}>
+                        <header style={{ backgroundColor: colors.white, padding: '1.5rem 2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '2rem' }}>
+                                <h1 style={{ color: colors.primary, margin: 0 }}>WELCORA</h1>
+                                <p style={{ margin: 0, color: '#666' }}>Welcome, <strong>{currentHost.name}</strong> ({currentHost.tier})</p>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    setIsAuthenticated(false);
+                                    setCurrentHost(null);
+                                    setCurrentPage('landing');
+                                }}
+                                style={{
+                                    padding: '0.75rem 1.5rem',
+                                    backgroundColor: colors.danger,
+                                    color: colors.white,
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    cursor: 'pointer',
+                                    fontWeight: 'bold',
+                                    transition: 'background 0.3s'
+                                }}
+                                onMouseEnter={(e) => e.target.style.backgroundColor = '#C0392B'}
+                                onMouseLeave={(e) => e.target.style.backgroundColor = colors.danger}
+                            >
+                                Logout
+                            </button>
+                        </header>
+
+                        <div style={{ backgroundColor: colors.white, borderBottom: `3px solid ${colors.light}`, display: 'flex', gap: '2rem', padding: '1rem 2rem', overflowX: 'auto' }}>
+                            {['search', 'ratings', 'newrating'].map(tab => {
+                                const labels = { search: '🔍 Search Customer', ratings: '⭐ My Ratings', newrating: '➕ New Rating' };
+                                return (
+                                    <button
+                                        key={tab}
+                                        onClick={() => setActiveTab(tab)}
+                                        style={{
+                                            padding: '0.75rem 1.5rem',
+                                            backgroundColor: activeTab === tab ? colors.primary : 'transparent',
+                                            color: activeTab === tab ? colors.white : colors.dark,
+                                            border: 'none',
+                                            borderRadius: '6px',
+                                            cursor: 'pointer',
+                                            fontWeight: 'bold',
+                                            fontSize: '1rem',
+                                            whiteSpace: 'nowrap',
+                                            transition: 'all 0.3s'
+                                        }}
+                                    >
+                                        {labels[tab]}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '2rem' }}>
+                            {activeTab === 'search' && <SearchTab />}
+                            {activeTab === 'ratings' && <RatingsTab />}
+                            {activeTab === 'newrating' && <NewRatingTab />}
+                        </div>
+                    </div>
+                );
+
+                function SearchTab() {
+                    return (
+                        <div style={{ backgroundColor: colors.white, padding: '2rem', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                            <h3 style={{ color: colors.primary, marginTop: 0 }}>🔍 Search Guest History</h3>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '1rem', marginBottom: '2rem' }}>
+                                <input
+                                    type="text"
+                                    placeholder="Search by name or email..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                                    style={{
+                                        padding: '0.75rem',
+                                        border: `2px solid ${colors.primary}`,
+                                        borderRadius: '8px',
+                                        fontSize: '1rem'
+                                    }}
+                                />
+                                <button
+                                    onClick={handleSearch}
+                                    style={{
+                                        padding: '0.75rem 1.5rem',
+                                        backgroundColor: colors.primary,
+                                        color: colors.white,
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        cursor: 'pointer',
+                                        fontWeight: 'bold',
+                                        transition: 'background 0.3s'
+                                    }}
+                                    onMouseEnter={(e) => e.target.style.backgroundColor = '#4A9FC6'}
+                                    onMouseLeave={(e) => e.target.style.backgroundColor = colors.primary}
+                                >
+                                    Search
+                                </button>
+                            </div>
+
+                            {searchResults.length > 0 && (
+                                <div>
+                                    <h4 style={{ color: colors.dark, marginBottom: '1rem' }}>Results ({searchResults.length})</h4>
+                                    {searchResults.map((result) => {
+                                        const avg = getAverageRating(result.customerId);
+                                        const status = getCustomerStatus(result.customerId);
+                                        return (
+                                            <div key={result.id} style={{
+                                                backgroundColor: '#F9F9F9',
+                                                padding: '1.5rem',
+                                                borderRadius: '8px',
+                                                marginBottom: '1rem',
+                                                borderLeft: `4px solid ${status.color}`
+                                            }}>
+                                                <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: '2rem' }}>
+                                                    <div>
+                                                        <p style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: 'bold' }}>{result.customerId}</p>
+                                                        <p style={{ margin: '0 0 0.5rem 0', color: '#666', fontSize: '0.9rem' }}>📧 {result.customerEmail}</p>
+                                                        <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>🏨 Check-out: {result.date}</p>
+                                                    </div>
+                                                    <div style={{ textAlign: 'right' }}>
+                                                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: colors.primary, marginBottom: '0.5rem' }}>
+                                                            {avg > 0 ? `${avg} ⭐` : 'N/A'}
+                                                        </div>
+                                                        <div style={{
+                                                            display: 'inline-block',
+                                                            backgroundColor: status.color,
+                                                            color: colors.white,
+                                                            padding: '0.5rem 1rem',
+                                                            borderRadius: '20px',
+                                                            fontWeight: 'bold',
+                                                            fontSize: '0.9rem'
+                                                        }}>
+                                                            {status.icon} {status.label}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <p style={{ margin: '1rem 0 0 0', color: '#555', fontSize: '0.95rem', fontStyle: 'italic' }}>"{result.comment}"</p>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+
+                            {searchResults.length === 0 && searchQuery && (
+                                <div style={{ textAlign: 'center', color: '#999', padding: '2rem' }}>
+                                    No results found for "{searchQuery}"
+                                </div>
+                            )}
+                        </div>
+                    );
+                }
+
+                function RatingsTab() {
+                    return (
+                        <div style={{ backgroundColor: colors.white, padding: '2rem', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                            <h3 style={{ color: colors.primary, marginTop: 0 }}>⭐ Your Recent Ratings</h3>
+                            {hostRatings.length === 0 ? (
+                                <p style={{ color: '#999', textAlign: 'center', padding: '2rem' }}>No ratings yet. Start rating your guests!</p>
+                            ) : (
+                                <div>
+                                    {hostRatings.map((rating) => (
+                                        <div key={rating.id} style={{
+                                            backgroundColor: '#F9F9F9',
+                                            padding: '1.5rem',
+                                            borderRadius: '8px',
+                                            marginBottom: '1rem',
+                                            borderLeft: `4px solid ${colors.primary}`
+                                        }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
+                                                <div>
+                                                    <p style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', fontWeight: 'bold' }}>{rating.customerId}</p>
+                                                    <p style={{ margin: '0 0 0.5rem 0', color: '#666', fontSize: '0.9rem' }}>{rating.date}</p>
+                                                </div>
+                                                <div style={{ textAlign: 'right' }}>
+                                                    <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>{'⭐'.repeat(rating.rating)}</div>
+                                                    <div style={{ fontSize: '0.9rem', color: '#666' }}>{rating.rating}/5</div>
+                                                </div>
+                                            </div>
+                                            <p style={{ margin: '1rem 0 0 0', color: '#555', fontSize: '0.95rem' }}>{rating.comment}</p>
+                                            {rating.categories && rating.categories.length > 0 && (
+                                                <div style={{ marginTop: '0.75rem' }}>
+                                                    {rating.categories.map((cat, i) => (
+                                                        <span key={i} style={{
+                                                            display: 'inline-block',
+                                                            backgroundColor: colors.danger,
+                                                            color: colors.white,
+                                                            padding: '0.25rem 0.75rem',
+                                                            borderRadius: '12px',
+                                                            fontSize: '0.8rem',
+                                                            marginRight: '0.5rem',
+                                                            marginTop: '0.25rem'
+                                                        }}>
+                                                            {cat}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    );
+                }
+
+                function NewRatingTab() {
+                    const [formData, setFormData] = useState({
+                        customerId: '',
+                        customerEmail: '',
+                        rating: 5,
+                        comment: '',
+                        categories: [],
+                        date: new Date().toISOString().split('T')[0]
+                    });
+                    const [submitted, setSubmitted] = useState(false);
+
+                    const handleChange = (field, value) => {
+                        setFormData({ ...formData, [field]: value });
+                    };
+
+                    const toggleCategory = (cat) => {
+                        if (formData.categories.includes(cat)) {
+                            setFormData({ ...formData, categories: formData.categories.filter(c => c !== cat) });
+                        } else {
+                            setFormData({ ...formData, categories: [...formData.categories, cat] });
+                        }
+                    };
+
+                    const handleSubmit = (e) => {
+                        e.preventDefault();
+                        if (!formData.customerId.trim() || !formData.customerEmail.trim() || formData.comment.trim().length < 5) {
+                            alert('Please fill all fields (comment min 5 chars)');
+                            return;
+                        }
+
+                        const ratingId = Date.now().toString();
+                        setRatings({
+                            ...ratings,
+                            [ratingId]: {
+                                ...formData,
+                                hostEmail: currentHost.email,
+                                disputed: false
+                            }
+                        });
+
+                        setFormData({
+                            customerId: '',
+                            customerEmail: '',
+                            rating: 5,
+                            comment: '',
+                            categories: [],
+                            date: new Date().toISOString().split('T')[0]
+                        });
+                        setSubmitted(true);
+                        setTimeout(() => setSubmitted(false), 3000);
+                    };
+
+                    return (
+                        <div style={{ backgroundColor: colors.white, padding: '2rem', borderRadius: '12px', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                            <h3 style={{ color: colors.primary, marginTop: 0 }}>➕ Rate a Guest</h3>
+                            {submitted && <div style={{ backgroundColor: '#E8F8F5', color: colors.success, padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>✅ Rating submitted successfully!</div>}
+
+                            <form onSubmit={handleSubmit}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Guest Name *</label>
+                                        <input
+                                            type="text"
+                                            value={formData.customerId}
+                                            onChange={(e) => handleChange('customerId', e.target.value)}
+                                            placeholder="Full name"
+                                            style={{ width: '100%', padding: '0.75rem', border: `2px solid ${colors.primary}`, borderRadius: '8px', boxSizing: 'border-box', fontSize: '1rem' }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Guest Email *</label>
+                                        <input
+                                            type="email"
+                                            value={formData.customerEmail}
+                                            onChange={(e) => handleChange('customerEmail', e.target.value)}
+                                            placeholder="guest@email.com"
+                                            style={{ width: '100%', padding: '0.75rem', border: `2px solid ${colors.primary}`, borderRadius: '8px', boxSizing: 'border-box', fontSize: '1rem' }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Check-out Date *</label>
+                                        <input
+                                            type="date"
+                                            value={formData.date}
+                                            onChange={(e) => handleChange('date', e.target.value)}
+                                            style={{ width: '100%', padding: '0.75rem', border: `2px solid ${colors.primary}`, borderRadius: '8px', boxSizing: 'border-box', fontSize: '1rem' }}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <label style={{ display: 'block', marginBottom: '1rem', fontWeight: 'bold' }}>Rating *</label>
+                                    <div style={{ display: 'flex', gap: '0.5rem', fontSize: '2rem' }}>
+                                        {[1, 2, 3, 4, 5].map(star => (
+                                            <button
+                                                key={star}
+                                                type="button"
+                                                onClick={() => handleChange('rating', star)}
+                                                style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    cursor: 'pointer',
+                                                    fontSize: '2rem',
+                                                    opacity: star <= formData.rating ? 1 : 0.3,
+                                                    transition: 'opacity 0.2s'
+                                                }}
+                                            >
+                                                ⭐
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <label style={{ display: 'block', marginBottom: '0.75rem', fontWeight: 'bold' }}>Issues (if any)</label>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '0.75rem' }}>
+                                        {['Damage', 'Noise', 'Rules Violation', 'Payment Issue'].map(cat => (
+                                            <label key={cat} style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={formData.categories.includes(cat)}
+                                                    onChange={() => toggleCategory(cat)}
+                                                    style={{ marginRight: '0.5rem', cursor: 'pointer', width: '18px', height: '18px' }}
+                                                />
+                                                <span>{cat}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div style={{ marginBottom: '1.5rem' }}>
+                                    <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Comment * (min 5 characters)</label>
+                                    <textarea
+                                        value={formData.comment}
+                                        onChange={(e) => handleChange('comment', e.target.value)}
+                                        placeholder="Describe your experience with this guest..."
+                                        style={{
+                                            width: '100%',
+                                            padding: '0.75rem',
+                                            border: `2px solid ${colors.primary}`,
+                                            borderRadius: '8px',
+                                            boxSizing: 'border-box',
+                                            fontSize: '1rem',
+                                            minHeight: '120px',
+                                            fontFamily: 'inherit',
+                                            resize: 'vertical'
+                                        }}
+                                    />
+                                </div>
+
+                                <button
+                                    type="submit"
+                                    style={{
+                                        width: '100%',
+                                        padding: '1rem',
+                                        backgroundColor: colors.success,
+                                        color: colors.white,
+                                        border: 'none',
+                                        borderRadius: '8px',
+                                        fontWeight: 'bold',
+                                        fontSize: '1rem',
+                                        cursor: 'pointer',
+                                        transition: 'background 0.3s'
+                                    }}
+                                    onMouseEnter={(e) => e.target.style.backgroundColor = '#229954'}
+                                    onMouseLeave={(e) => e.target.style.backgroundColor = colors.success}
+                                >
+                                    Submit Rating
+                                </button>
+                            </form>
+                        </div>
+                    );
+                }
+            };
+
+            return (
+                <div style={{ fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif" }}>
+                    {!isAuthenticated ? (
+                        currentPage === 'landing' ? <LandingPage /> : <AuthPage />
+                    ) : (
+                        <DashboardPage />
+                    )}
+                </div>
+            );
+        };
+
+        ReactDOM.render(<Welcora />, document.getElementById('root'));
+    </script>
+</body>
+</html>
